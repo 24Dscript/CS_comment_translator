@@ -1,5 +1,7 @@
 import requests
 
+Deepl_free_URL = "https://api-free.deepl.com/v2/translate" # URIは有償版, 無償版で異なるため要注意
+
 def load_api_key():
     api_key_file = 'api_key.txt'  # APIキーを保存したテキストファイルのパス
     with open(api_key_file, 'r') as file:
@@ -16,7 +18,7 @@ def main(text, source_lang = 'EN', target_lang = 'JA'):
             }
 
     # リクエストを投げる
-    request = requests.post("https://api-free.deepl.com/v2/translate", data=params) # URIは有償版, 無償版で異なるため要注意
+    request = requests.post(Deepl_free_URL, data=params)
     result = request.json()
     print(result['translations'][0]['text'])
     return result['translations'][0]['text']

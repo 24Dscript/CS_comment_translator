@@ -3,6 +3,7 @@ import re
 import time
 import translate
 from datetime import datetime
+import argparse
 
 def isCommentLine(line):
     """
@@ -168,15 +169,15 @@ def removeTagFromMTCL(multiLineTagCommentList, tagStrings):
 
 # ”//”の行 と 複数行のタグ付きコメント の行を翻訳
 # [0[行番号のリスト], 1翻訳された文章]
-def transrateCommentList(CommentList,not_charcount_only):
+def transrateCommentList(CommentList,char_count_only):
     temp = []
     #if CommentList and len(CommentList) > 0 and CommentList[0] and len(CommentList[0]) > 0:
     if len(CommentList) > 0 :
         for lis in CommentList:
-            if not_charcount_only:
-                lis[1] = translate.main(lis[1])
-            else:
+            if char_count_only:
                 lis[1] = translate.main_dummy(lis[1])
+            else:
+                lis[1] = translate.main(lis[1])
         for elm in CommentList:
             if not elm[0]:  # 空のリストをスキップ
                 continue
@@ -203,16 +204,16 @@ def updateCommentLinesList(commentLinesList,CommentList):
                 lis[2] = lis[2] + CommentList[i][1]
 
 # 1行完結のタグ付きコメント行を翻訳                
-def transrateSingleLineTagCommentList(singleLineTagCommentList,not_charcount_only):        
+def transrateSingleLineTagCommentList(singleLineTagCommentList,char_count_only):        
     for lis in singleLineTagCommentList:
-        if not_charcount_only:
-            lis[4] = translate.main(lis[3])
-        else:
+        if char_count_only:
             lis[4] = translate.main_dummy(lis[3])
+        else:
+            lis[4] = translate.main(lis[3])
         lis[2] = re.sub(lis[3],lis[4], lis[1])
 
 # コメントを翻訳して置換
-def translateComments(text,not_charcount_only):
+def translateComments(text,char_count_only):
     # リストの初期化
     commentLinesList = []
     XMLcommentLinesList = []
@@ -245,14 +246,14 @@ def translateComments(text,not_charcount_only):
     
     # ”//”の行 と 複数行のタグ付きコメント の要素を翻訳
     # [[0[行番号のリスト], 1翻訳する文章]...] ＝＞ [[0行番号, 1翻訳された文章]...]
-    CommentList = transrateCommentList(CommentList,not_charcount_only)
-    XMLCommentList = transrateCommentList(XMLCommentList,not_charcount_only)
+    CommentList = transrateCommentList(CommentList,char_count_only)
+    XMLCommentList = transrateCommentList(XMLCommentList,char_count_only)
     
     # ”//”の行の翻訳結果を行番号を元に行リストに格納
     updateCommentLinesList(commentLinesList,CommentList)
 
     # 1行完結のタグ付きコメント行を翻訳、行リストに格納                
-    transrateSingleLineTagCommentList(singleLineTagCommentList,not_charcount_only)   
+    transrateSingleLineTagCommentList(singleLineTagCommentList,char_count_only)   
                                         
     # 複数行タグ付きコメントの翻訳結果リスト の行番号をセットに変換
     indicesXMLCommentList = {item[0] for item in XMLCommentList} 
@@ -271,7 +272,7 @@ def translateComments(text,not_charcount_only):
     for lis in finallyList:
         numChar += len(lis[3])
     
-    if not_charcount_only:
+    if not char_count_only:
         print(f"{numChar:>10} 文字翻訳しました")
     
     # 翻訳結果を元のテキストに反映
@@ -297,12 +298,12 @@ def importCSFilesFromDir(dirPath, include_subfolders=False):
     return files
 
 # C#ファイルを取得してbackupフォルダにコピーしてファイルごとに処理
-def main(processing_Dir, backup_Dir, include_subfolders=False, not_charcount_only = True):
+def main(processing_Dir, backup_Dir, include_subfolders=False, char_count_only = False):
     # ファイルを取得
     files = importCSFilesFromDir(processing_Dir, include_subfolders)
     print("ファイル数: ", len(files))
     # backupフォルダを作成
-    if not_charcount_only:
+    if not char_count_only:
         if not os.path.exists(backup_Dir):
             os.makedirs(backup_Dir)
         # ファイルをbackupにコピー
@@ -315,20 +316,20 @@ def main(processing_Dir, backup_Dir, include_subfolders=False, not_charcount_onl
                 f.write(text)
     else:
         print("文字数だけカウントするモードです")
-        print("翻訳を実行する場合は、第三引数をTrueにしてください")
+        print("翻訳を実行する場合は、--char_count_onlyなしで実行してください")
         print("----------------------------------------------------")
     
     totalnumChar = 0
     # ファイルごとに処理結果を上書き
     for file in files:
         text = ''
-        if not_charcount_only:
+        if not char_count_only:
             with open(os.path.join(backup_Dir, file), 'r', encoding='utf-8') as f:
                 text = f.read()
             print("-----------------------------//  ", os.path.basename(f.name), 
                 "を翻訳しますよ  //-----------------------------")
             # コメントを翻訳
-            (translated_text , num) = translateComments(text,not_charcount_only)
+            (translated_text , num) = translateComments(text,char_count_only)
             totalnumChar += num
             # ファイルを上書き保存
             with open(os.path.join(processing_Dir, file), 'w', encoding='utf-8') as f:
@@ -340,28 +341,33 @@ def main(processing_Dir, backup_Dir, include_subfolders=False, not_charcount_onl
             with open(os.path.join(processing_Dir, file), 'r', encoding='utf-8') as f:
                 text = f.read()
             # 翻訳処理をスキップして文字数だけカウント
-            (translated_text , num) = translateComments(text,not_charcount_only)
+            (translated_text , num) = translateComments(text,char_count_only)
             print(f"{num:>8} 文字", os.path.basename(f.name))
             totalnumChar += num
         # 0.3秒待機
         time.sleep(0.3)
-    if not_charcount_only:
-        print("----------------------------------------------------")
-        print("合計", totalnumChar, "文字翻訳しました")
-    else:
+    if char_count_only:
         print("----------------------------------------------------")
         print("合計", totalnumChar, "文字")
+    else:
+        print("----------------------------------------------------")
+        print("合計", totalnumChar, "文字翻訳しました")
     print("DeepL APIで無料で翻訳できるのは、1月あたり500,000文字までです、ご注意ください")
 
 
 
 # 使用例
 if __name__ == '__main__':
-    processing_Dir = 'D:\\unity\\XR_origen\\Library\\PackageCache\\com.unity.xr.interaction.toolkit\\Runtime\\Locomotion'
+    parser = argparse.ArgumentParser(description='C#のコメントを翻訳するスクリプト')
+    parser.add_argument('processing_Dir', type=str, help='処理するフォルダのパス')
+    parser.add_argument('--include_subfolders', action='store_true', help='サブフォルダを含めるかどうかのオプション')
+    parser.add_argument('--char_count_only', action='store_true', help='翻訳スキップして文字数カウントだけ、オプション')
+    args = parser.parse_args()
+    processing_Dir = args.processing_Dir
+    
     # 今日の日付と時刻を取得し、フォーマットする
     now = datetime.now().strftime('%Y%m%d_%H%M%S')
     # フォルダ名を作成する
     backup_Dir = os.path.join('backupCode', now, os.path.basename(processing_Dir))
-    include_subfolders = True  # サブフォルダを含めるかどうかのオプション
-    not_charcount_only = False  #True # 翻訳スキップで文字数カウントだけにしない、オプション。Tlueにすると翻訳を実行
-    main(processing_Dir, backup_Dir, include_subfolders, not_charcount_only)
+    
+    main(args.processing_Dir , backup_Dir, args.include_subfolders, args.char_count_only)
