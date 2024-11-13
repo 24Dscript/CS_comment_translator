@@ -30,7 +30,7 @@ I think it may be meaningless for those whose native language is not Japanese.
    以下のコマンドを使用して、C#ファイルが格納されたフォルダを指定して実行します。
 
    ```bash
-   python3 CS_comment_translator.py "フォルダのパス"
+   python CS_comment_translator.py "フォルダのパス"
    ```
 
    上記のコマンドを実行すると、指定したフォルダ内のC#ファイルが処理され、コメントが翻訳されます。
@@ -44,7 +44,7 @@ I think it may be meaningless for those whose native language is not Japanese.
   翻訳リクエストを送信せず、翻訳対象の文字数のみをカウントします。DeepL APIの月ごとの文字数制限を超えていないか確認するために、事前に確認することをおすすめします。
 
   ```bash
-  python3 CS_comment_translator.py "フォルダのパス" --char_count_only
+  python CS_comment_translator.py "フォルダのパス" --char_count_only
   ```
 
 ### 処理の流れ
